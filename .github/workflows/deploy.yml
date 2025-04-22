@@ -96,7 +96,7 @@ jobs:
           sudo pkill -f app.py || true
           sudo mkdir -p /var/www/xssdemo
           sudo mv /tmp/app.py /var/www/xssdemo/app.py
-          nohup sudo  python3 /var/www/xssdemo/app.py & 
+          # nohup sudo  python3 /var/www/xssdemo/app.py & 
         EOF
 
     - name: Setup Flask App on Attacker VM
@@ -110,5 +110,5 @@ jobs:
           sudo mv /tmp/attacker.py /var/www/xssdemo/attacker.py
           sudo mkdir -p /var/www/xssdemo/badjs
           sudo mv /tmp/bad.js /var/www/xssdemo/bad.js
-          nohup sudo python3 /var/www/xssdemo/attacker.py & 
+          # nohup sudo python3 /var/www/xssdemo/attacker.py & 
         EOF
