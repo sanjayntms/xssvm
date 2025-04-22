@@ -109,6 +109,6 @@ jobs:
           sudo mkdir -p /var/www/xssdemo
           sudo mv /tmp/attacker.py /var/www/xssdemo/attacker.py
           sudo mkdir -p /var/www/xssdemo/badjs
-          sudo mv /tmp/bad.js /var/www/xssdemo/bad.js
+          sudo mv /tmp/bad.js /var/www/xssdemo/badjs/bad.js
           # nohup sudo python3 /var/www/xssdemo/attacker.py & 
         EOF
