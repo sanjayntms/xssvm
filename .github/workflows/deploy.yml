@@ -56,7 +56,6 @@ jobs:
   post_setup:
     needs: deploy
     runs-on: ubuntu-latest
-    if: always()
     env:
      AZURE_RESOURCE_GROUP: xss3-RG
      ADMIN_USERNAME: azureuser
