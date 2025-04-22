@@ -18,7 +18,7 @@ jobs:
             port: 80
           
     env:
-      AZURE_RESOURCE_GROUP: xss3-RG
+      AZURE_RESOURCE_GROUP: xss4-RG
       REGION: northeurope
       ADMIN_USERNAME: azureuser
       ADMIN_PASSWORD: ${{ secrets.VM_PASSWORD }}
@@ -57,7 +57,7 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     env:
-     AZURE_RESOURCE_GROUP: xss3-RG
+     AZURE_RESOURCE_GROUP: xss4-RG
      ADMIN_USERNAME: azureuser
      ADMIN_PASSWORD: ${{ secrets.VM_PASSWORD }}
     steps:
