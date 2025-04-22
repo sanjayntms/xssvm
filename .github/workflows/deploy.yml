@@ -1,0 +1,115 @@
+name: Deploy XSS Demo to Azure
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        vm_name: [webvm, attackervm]
+        include:
+          - vm_name: webvm
+            image: Ubuntu2204
+            port: 80
+          - vm_name: attackervm
+            image: Ubuntu2204
+            port: 80
+          
+    env:
+      AZURE_RESOURCE_GROUP: xss3-RG
+      REGION: northeurope
+      ADMIN_USERNAME: azureuser
+      ADMIN_PASSWORD: ${{ secrets.VM_PASSWORD }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Ensure Resource Group Exists
+      run: |
+        az group show --name $AZURE_RESOURCE_GROUP || \
+        az group create --name $AZURE_RESOURCE_GROUP --location $REGION
+
+    - name: Create VM if needed
+      run: |
+        az vm show --resource-group $AZURE_RESOURCE_GROUP --name ${{ matrix.vm_name }} || \
+        az vm create \
+          --resource-group $AZURE_RESOURCE_GROUP \
+          --name ${{ matrix.vm_name }} \
+          --image ${{ matrix.image }} \
+          --admin-username $ADMIN_USERNAME \
+          --admin-password $ADMIN_PASSWORD \
+          --authentication-type password \
+          --output none
+
+    - name: Open required port
+      run: |
+        az vm open-port --resource-group $AZURE_RESOURCE_GROUP --name ${{ matrix.vm_name }} --port ${{ matrix.port }} || true
+
+  post_setup:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+    env:
+     AZURE_RESOURCE_GROUP: xss3-RG
+     ADMIN_USERNAME: azureuser
+     ADMIN_PASSWORD: ${{ secrets.VM_PASSWORD }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3  
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Get VM IPs
+      run: |
+          webVM_IP=$(az vm show -d -g $AZURE_RESOURCE_GROUP -n webvm --query publicIps -o tsv)
+          attackerVM_IP=$(az vm show -d -g $AZURE_RESOURCE_GROUP -n attackervm --query publicIps -o tsv)
+          sleep 10
+          echo "webVM_IP=$webVM_IP" >> $GITHUB_ENV
+          echo "attackerVM_IP=$attackerVM_IP" >> $GITHUB_ENV
+    - name: Install sshpass
+      run: sudo apt-get install -y sshpass
+
+    - name: Copy files to VMs
+      run: |
+        echo "WebVM IP: $webVM_IP"
+        echo "AttackerVM IP: $attackerVM_ip"
+        sshpass -p "$ADMIN_PASSWORD" scp -o StrictHostKeyChecking=no app/app.py ${ADMIN_USERNAME}@$webVM_IP:/tmp/app.py
+        sshpass -p "$ADMIN_PASSWORD" scp -o StrictHostKeyChecking=no app/attacker.py ${ADMIN_USERNAME}@$attackerVM_IP:/tmp/attacker.py
+        sshpass -p "$ADMIN_PASSWORD" scp -o StrictHostKeyChecking=no badjs/bad.js ${ADMIN_USERNAME}@$attackerVM_IP:/tmp/bad.js
+
+    - name: Setup Flask App on Web VM
+      run: |
+        sshpass -p "$ADMIN_PASSWORD" ssh -o StrictHostKeyChecking=no ${ADMIN_USERNAME}@$webVM_IP << 'EOF'
+          sudo apt update
+          sudo apt install -y python3-pip
+          sudo pip3 install flask
+
+          sudo pkill -f app.py || true
+          sudo mkdir -p /var/www/xssdemo
+          sudo mv /tmp/app.py /var/www/xssdemo/app.py
+          nohup sudo  python3 /var/www/xssdemo/app.py /dev/null 2>&1 & 
+        EOF
+
+    - name: Setup Flask App on Attacker VM
+      run: |
+        sshpass -p "$ADMIN_PASSWORD" ssh -o StrictHostKeyChecking=no ${ADMIN_USERNAME}@$attackerVM_IP << 'EOF'
+          sudo apt update
+          sudo apt install -y python3-pip
+          sudo pip3 install flask flask-cors
+          sudo pkill -f attacker.py || true
+          sudo mkdir -p /var/www/xssdemo
+          sudo mv /tmp/attacker.py /var/www/xssdemo/attacker.py
+          sudo mkdir -p /var/www/xssdemo/badjs
+          sudo mv /tmp/bad.js /var/www/xssdemo/bad.js
+          nohup sudo python3 /var/www/xssdemo/attacker.py /dev/null 2>&1 & 
+        EOF
